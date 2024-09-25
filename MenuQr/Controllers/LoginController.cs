@@ -66,7 +66,17 @@ namespace MenuQr.Controllers
                 return StatusCode(500, new { error = "An error occurred during registration.", details = ex.Message });
             }
         }
+        // user click on the sign-in with google then front end will trigger this login api to send user to the Google login page.
+        public async Task Login()
+        {
+            await HttpContext.ChallengeAsync(GoogleDefaults.AuthenticationScheme,
+                new AuthenticationProperties
+                {
+                    RedirectUri = Url.Action("GoogleResponse") // Where Google will send the response back
+                });
+        }
 
+        // after user entered their Google account credentials, Google handles the authentication and redirects the user back to this API
         [HttpGet("google-response")]
         public async Task<IActionResult> GoogleResponse()
         {
