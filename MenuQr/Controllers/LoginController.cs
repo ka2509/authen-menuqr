@@ -67,7 +67,8 @@ namespace MenuQr.Controllers
             }
         }
         // user click on the sign-in with google then front end will trigger this login api to send user to the Google login page.
-        public async Task Login()
+        [HttpGet("login-with-google")]
+        public async Task LoginWithGoogle()
         {
             await HttpContext.ChallengeAsync(GoogleDefaults.AuthenticationScheme,
                 new AuthenticationProperties
@@ -77,7 +78,6 @@ namespace MenuQr.Controllers
         }
 
         // after user entered their Google account credentials, Google handles the authentication and redirects the user back to this API
-        [HttpGet("google-response")]
         public async Task<IActionResult> GoogleResponse()
         {
             try
@@ -126,5 +126,34 @@ namespace MenuQr.Controllers
                 return StatusCode(500, new { error = "An error occurred during Google authentication.", details = ex.Message });
             }
         }
+        [HttpPost]
+        public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { message = "Invalid input data.", errors = ModelState });
+            }
+
+            // Check if the username is an email or phone number
+            var user = await _users.Find(u =>
+                u.Email == loginDto.Username ||
+                u.PhoneNumber == loginDto.Username).FirstOrDefaultAsync();
+
+            if (user == null)
+            {
+                return Unauthorized(new { message = "Invalid credentials." });
+            }
+
+            // Verify password
+            if (!BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password))
+            {
+                return Unauthorized(new { message = "Invalid credentials." });
+            }
+
+            // Generate token
+            var token = _tokenService.CreateToken(user);
+            return Ok(new { message = "User logged in successfully.", token });
+        }
+
     }
 }
