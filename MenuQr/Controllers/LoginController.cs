@@ -31,14 +31,14 @@ namespace MenuQr.Controllers
             {
                 if (!ModelState.IsValid)
                 {
-                    return BadRequest(new { message = "Invalid input data.", errors = ModelState });
+                    return BadRequest(new { message = "Thông tin không hợp lệ.", errors = ModelState });
                 }
 
                 // Check if email or phone number already exists
                 var existingUser = await _users.Find(u => u.Email == registerDto.Email || u.PhoneNumber == registerDto.PhoneNumber).FirstOrDefaultAsync();
                 if (existingUser != null)
                 {
-                    return Conflict(new { message = "Email or phone number already exists." });
+                    return Conflict(new { message = "Số điện thoại hoặc địa chỉ email đã được đăng ký." });
                 }
 
                 // Hash password
@@ -59,11 +59,11 @@ namespace MenuQr.Controllers
                 // Generate token
                 var token = _tokenService.CreateToken(user);
 
-                return Ok(new { message = "User registered successfully.", token });
+                return Ok(new { message = "Người dùng đã đăng ký thành công.", token });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { error = "An error occurred during registration.", details = ex.Message });
+                return StatusCode(500, new { error = "Lỗi xảy ra trong quá trình đăng ký.", details = ex.Message });
             }
         }
         // user click on the sign-in with google then front end will trigger this login api to send user to the Google login page.
@@ -95,10 +95,6 @@ namespace MenuQr.Controllers
                 var firstNameClaim = claimsIdentity.FindFirst(ClaimTypes.GivenName)?.Value;
                 var lastNameClaim = claimsIdentity.FindFirst(ClaimTypes.Surname)?.Value;
 
-                if (string.IsNullOrEmpty(emailClaim))
-                {
-                    return BadRequest(new { message = "No email found in the claims." });
-                }
 
                 // Check if user already exists in the database
                 var existingUser = await _users.Find(u => u.Email == emailClaim).FirstOrDefaultAsync();
@@ -115,15 +111,15 @@ namespace MenuQr.Controllers
                     await _users.InsertOneAsync(newUser);
                     var token = _tokenService.CreateToken(newUser);
 
-                    return Ok(new { message = "User created successfully.", token });
+                    return Ok(new { message = "Người dùng tạo tài khoản thành công.", token });
                 }
                 // if user already exists => generate token
                 var existingUserToken = _tokenService.CreateToken(existingUser);
-                return Ok(new { message = "User logged in successfully.", token = existingUserToken });
+                return Ok(new { message = "Người dùng đăng nhập thành công.", token = existingUserToken });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { error = "An error occurred during Google authentication.", details = ex.Message });
+                return StatusCode(500, new { error = "Có lỗi xảy ra trong quá trình đăng nhập.", details = ex.Message });
             }
         }
         [HttpPost]
@@ -131,7 +127,7 @@ namespace MenuQr.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(new { message = "Invalid input data.", errors = ModelState });
+                return BadRequest(new { message = "Thông tin không hợp lệ.", errors = ModelState });
             }
 
             // Check if the username is an email or phone number
@@ -141,18 +137,18 @@ namespace MenuQr.Controllers
 
             if (user == null)
             {
-                return Unauthorized(new { message = "Invalid credentials." });
+                return Unauthorized(new { message = "Người dùng không tồn tại." });
             }
 
             // Verify password
             if (!BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password))
             {
-                return Unauthorized(new { message = "Invalid credentials." });
+                return Unauthorized(new { message = "Mật khẩu sai." });
             }
 
             // Generate token
             var token = _tokenService.CreateToken(user);
-            return Ok(new { message = "User logged in successfully.", token });
+            return Ok(new { message = "Người dùng đăng nhập thành công.", token });
         }
 
     }

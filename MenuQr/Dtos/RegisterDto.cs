@@ -9,11 +9,13 @@ namespace MenuQr.Dtos
         [Required]
         public string? LastName { get; set; }
         [Required]
-        [EmailAddress]
+        [EmailAddress(ErrorMessage = "Địa chỉ email không hợp lệ.")]
         public string? Email { get; set; }
         [Required]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu phải chứa ít nhất 6 ký tự.")]
         public string? Password { get; set; }
         [Required]
+        [Phone(ErrorMessage = "Số điện thoại không hợp lệ.")]
         public string? PhoneNumber { get; set; }
     }
 }
