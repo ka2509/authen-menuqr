@@ -100,7 +100,6 @@ namespace MenuQr.Controllers
                         FirstName = firstNameClaim ?? string.Empty,
                         LastName = lastNameClaim ?? string.Empty,
                         Email = emailClaim,
-                        PhoneNumber = string.Empty // Adjust if phone number is retrieved from Google
                     };
 
                     await _users.InsertOneAsync(newUser);
@@ -108,7 +107,7 @@ namespace MenuQr.Controllers
 
                     return Ok(new { message = "User created successfully.", token });
                 }
-
+                // if user already exists => generate token
                 var existingUserToken = _tokenService.CreateToken(existingUser);
                 return Ok(new { message = "User logged in successfully.", token = existingUserToken });
             }
