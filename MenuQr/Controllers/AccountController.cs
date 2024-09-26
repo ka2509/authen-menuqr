@@ -12,13 +12,13 @@ using MenuQr.Dtos;
 namespace MenuQr.Controllers
 {
     [ApiController]
-    [Route("api/login")]
-    public class LoginController : ControllerBase
+    [Route("api/account")]
+    public class AccountController : ControllerBase
     {
         private readonly IMongoCollection<User> _users;
         private readonly TokenService _tokenService;
 
-        public LoginController(MongoDbService mongoDbService, TokenService tokenService)
+        public AccountController(MongoDbService mongoDbService, TokenService tokenService)
         {
             _users = mongoDbService.Database?.GetCollection<User>("user");
             _tokenService = tokenService;
@@ -43,22 +43,18 @@ namespace MenuQr.Controllers
 
                 // Hash password
                 var hashedPassword = BCrypt.Net.BCrypt.HashPassword(registerDto.Password);
-
+                // tạo ra refresh token và lưu vào database trước 
                 var user = new User
                 {
                     FirstName = registerDto.FirstName,
                     LastName = registerDto.LastName,
                     Email = registerDto.Email,
                     PhoneNumber = registerDto.PhoneNumber,
-                    Password = hashedPassword
+                    Password = hashedPassword,
+                    RefreshToken = _tokenService.GenerateRefreshToken(),
+                    RefreshTokenExpiryTime = DateTime.Now.AddDays(7)
                 };
-
-                // Insert new user
-                await _users.InsertOneAsync(user);
-
-                // Generate token
                 var token = _tokenService.CreateToken(user);
-
                 return Ok(new { message = "Người dùng đã đăng ký thành công.", token });
             }
             catch (Exception ex)
@@ -106,6 +102,8 @@ namespace MenuQr.Controllers
                         FirstName = firstNameClaim ?? string.Empty,
                         LastName = lastNameClaim ?? string.Empty,
                         Email = emailClaim,
+                        RefreshToken = _tokenService.GenerateRefreshToken(),
+                        RefreshTokenExpiryTime = DateTime.Now.AddDays(7)
                     };
 
                     await _users.InsertOneAsync(newUser);
@@ -113,16 +111,23 @@ namespace MenuQr.Controllers
 
                     return Ok(new { message = "Người dùng tạo tài khoản thành công.", token });
                 }
-                // if user already exists => generate token
+
+                // if user already exists => update refresh token 
+                existingUser.RefreshToken = _tokenService.GenerateRefreshToken();
+                existingUser.RefreshTokenExpiryTime = DateTime.Now.AddDays(7);
+
+                await _users.ReplaceOneAsync(u => u.Id ==existingUser.Id, existingUser);
+
+                // generate token and response
                 var existingUserToken = _tokenService.CreateToken(existingUser);
-                return Ok(new { message = "Người dùng đăng nhập thành công.", token = existingUserToken });
+                return Ok(new { message = "Người dùng đăng nhập thành công.", existingUserToken });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { error = "Có lỗi xảy ra trong quá trình đăng nhập.", details = ex.Message });
             }
         }
-        [HttpPost]
+        [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
             if (!ModelState.IsValid)
@@ -145,7 +150,11 @@ namespace MenuQr.Controllers
             {
                 return Unauthorized(new { message = "Mật khẩu sai." });
             }
+            // if password correct then update the refresh token
+            user.RefreshToken = _tokenService.GenerateRefreshToken();
+            user.RefreshTokenExpiryTime = DateTime.Now.AddDays(7);
 
+            await _users.ReplaceOneAsync(u => u.Id == user.Id, user);
             // Generate token
             var token = _tokenService.CreateToken(user);
             return Ok(new { message = "Người dùng đăng nhập thành công.", token });

@@ -15,7 +15,8 @@ namespace MenuQr.Dtos
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu phải chứa ít nhất 6 ký tự.")]
         public string? Password { get; set; }
         [Required]
-        [Phone(ErrorMessage = "Số điện thoại không hợp lệ.")]
+        [RegularExpression(@"^(0[3|5|7|8|9])+([0-9]{8})$", ErrorMessage = "Số điện thoại không hợp lệ.")]
         public string? PhoneNumber { get; set; }
+
     }
 }

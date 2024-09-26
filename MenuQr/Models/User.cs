@@ -18,5 +18,9 @@ namespace MenuQr.Models
         public string Password { get; set; } = string.Empty;
         [BsonElement("phone_number"), BsonRepresentation(BsonType.String)]
         public string PhoneNumber {  get; set; } = string.Empty;
+        [BsonElement("refresh_token"), BsonRepresentation(BsonType.String)]
+        public string? RefreshToken { get; set; }
+        [BsonElement("refresh_token_expiry_time"), BsonRepresentation(BsonType.DateTime)]
+        public DateTime RefreshTokenExpiryTime { get; set; }
     }
 }

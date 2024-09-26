@@ -3,6 +3,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.JsonWebTokens;
 using System.Security.Claims;
 using System.Text;
+using MenuQr.Dtos;
+using System.Security.Cryptography;
 
 namespace MenuQr.Services
 {
@@ -15,7 +17,7 @@ namespace MenuQr.Services
             _config = config;
             _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
         }
-        public string CreateToken(User user)
+        public TokenDto CreateToken(User user)
         {
             var claims = new List<Claim> {
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
@@ -33,7 +35,18 @@ namespace MenuQr.Services
             };
             var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+            // luôn update hoặc tạo refresh token trước tiên
+            return new TokenDto(tokenHandler.WriteToken(token), user.RefreshToken);
+        }
+        // tạo mảng 32 bytes, fill bảng bằng các số ngẫu nhiên, mã hóa mảng thành một chuỗi
+        public string GenerateRefreshToken()
+        {
+            var randomNumber = new byte[32];
+            using (var rdg = RandomNumberGenerator.Create())
+            {
+                rdg.GetBytes(randomNumber);
+                return Convert.ToBase64String(randomNumber);
+            }
         }
     }
 }
