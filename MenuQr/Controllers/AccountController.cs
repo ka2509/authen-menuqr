@@ -8,6 +8,7 @@ using MenuQr.Data;
 using System.Security.Claims;
 using MenuQr.Services;
 using MenuQr.Dtos;
+using Microsoft.AspNetCore.Authentication.Facebook;
 
 namespace MenuQr.Controllers
 {
@@ -74,6 +75,7 @@ namespace MenuQr.Controllers
         }
 
         // after user entered their Google account credentials, Google handles the authentication and redirects the user back to this API
+        [HttpGet("google-response")]
         public async Task<IActionResult> GoogleResponse()
         {
             try
@@ -159,6 +161,85 @@ namespace MenuQr.Controllers
             var token = _tokenService.CreateToken(user);
             return Ok(new { message = "Người dùng đăng nhập thành công.", token });
         }
+        // API để đăng nhập qua Facebook
+        [HttpGet("login-with-facebook")]
+        public async Task LoginWithFacebook()
+        {
+            await HttpContext.ChallengeAsync(FacebookDefaults.AuthenticationScheme,
+                new AuthenticationProperties
+                {
+                    RedirectUri = Url.Action("FacebookResponse") // Sau khi đăng nhập thành công, Facebook sẽ gửi phản hồi đến URL này
+                });
+        }
 
+        // API để xử lý phản hồi từ Facebook sau khi người dùng đăng nhập thành công
+        [HttpGet("facebook-response")]
+        public async Task<IActionResult> FacebookResponse()
+        {
+            try
+            {
+                var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+                // Lấy các claims từ Facebook
+                var claimsIdentity = result.Principal?.Identities.FirstOrDefault();
+                if (claimsIdentity == null)
+                {
+                    return Unauthorized(new { message = "No user identity found." });
+                }
+
+                var emailClaim = claimsIdentity.FindFirst(ClaimTypes.Email)?.Value;
+                var firstNameClaim = claimsIdentity.FindFirst(ClaimTypes.GivenName)?.Value;
+                var lastNameClaim = claimsIdentity.FindFirst(ClaimTypes.Surname)?.Value;
+                // Kiểm tra xem người dùng đã tồn tại trong database chưa
+                var existingUser = await _users.Find(u => u.Email == emailClaim).FirstOrDefaultAsync();
+                if (existingUser == null)
+                {
+                    // Tạo người dùng mới nếu chưa có
+                    var newUser = new User
+                    {
+                        FirstName = firstNameClaim ?? string.Empty,
+                        LastName = lastNameClaim ?? string.Empty,
+                        Email = emailClaim,
+                        RefreshToken = _tokenService.GenerateRefreshToken(),
+                        RefreshTokenExpiryTime = DateTime.Now.AddDays(7)
+                    };
+
+                    await _users.InsertOneAsync(newUser);
+                    var token = _tokenService.CreateToken(newUser);
+
+                    return Ok(new { message = "Người dùng tạo tài khoản thành công.", token });
+                }
+
+                // Người dùng đã tồn tại => tạo token
+                existingUser.RefreshToken = _tokenService.GenerateRefreshToken();
+                existingUser.RefreshTokenExpiryTime = DateTime.Now.AddDays(7);
+
+                await _users.ReplaceOneAsync(u => u.Id == existingUser.Id, existingUser);
+                // Tạo token
+                var existingUserToken = _tokenService.CreateToken(existingUser);
+                return Ok(new { message = "Người dùng đăng nhập thành công.", existingUserToken });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Có lỗi xảy ra trong quá trình đăng nhập.", details = ex.Message });
+            }
+        }
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout([FromBody] LogoutDto logoutDto)
+        {
+            var user = await _users.Find(u => u.Email == logoutDto.Email).FirstOrDefaultAsync();
+
+            if (user == null)
+            {
+                return BadRequest(new { message = "Người dùng không hợp lệ." });
+            }
+
+            // Xóa refresh token của người dùng đã đăng xuất
+            user.RefreshToken = null;
+            user.RefreshTokenExpiryTime = DateTime.MinValue;
+            await _users.ReplaceOneAsync(u => u.Id == user.Id, user);
+
+            return Ok(new { message = "Người dùng đăng xuất thành công." });
+        }
     }
 }

@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MenuQr")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+18f3048672e6d9dc73144bd77e049c6e1954b588")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6e6445e1767ed6ed5f8eb3b79bf77b8bbdfd32b9")]
 [assembly: System.Reflection.AssemblyProductAttribute("MenuQr")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MenuQr")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

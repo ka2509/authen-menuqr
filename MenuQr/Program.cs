@@ -33,6 +33,11 @@ builder.Services.AddAuthentication(options =>
     {
         options.ClientId = config["Authentication:Google:ClientId"];
         options.ClientSecret = config["Authentication:Google:ClientSecret"];
+    })
+    .AddFacebook(options =>
+    {
+        options.ClientId = config["Authentication:Facebook:ClientId"];
+        options.ClientSecret = config["Authentication:Facebook:ClientSecret"];
     });
 
 builder.Services.AddSingleton<MongoDbService>();

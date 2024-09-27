@@ -52,3 +52,4 @@ D:\repo\MenuQr\MenuQr\bin\Debug\net8.0\Microsoft.IdentityModel.Tokens.dll
 D:\repo\MenuQr\MenuQr\bin\Debug\net8.0\System.IdentityModel.Tokens.Jwt.dll
 D:\repo\MenuQr\MenuQr\bin\Debug\net8.0\BCrypt.Net-Next.dll
 D:\repo\MenuQr\MenuQr\obj\Debug\net8.0\MenuQr.sourcelink.json
+D:\repo\MenuQr\MenuQr\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.Facebook.dll
